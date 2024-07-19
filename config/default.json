@@ -1,0 +1,6 @@
+{
+    "serverPort": 5000,
+    "dbUrl": "mongodb+srv://samsonovoleksandr95:1qFX8dgGUniKbZb3@cluster0.aupurqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    "secretKey": "secret-key",
+    "filePath": "/Users/Samsonov/Desktop/cloudStore/server/files"
+}
