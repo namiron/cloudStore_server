@@ -39,60 +39,76 @@ class FileController {
             return res.status(500).json({ message: "can not get files" })
         }
     }
-
     async uploadFile(req, res) {
         try {
-            const file = req.files.file
+            const file = req.files.file;
 
-            const parent = await File.findOne({ user: req.user.id, _id: req.body.parent })
-            const user = await User.findOne({ _id: req.user.id })
+            const parent = await File.findOne({ user: req.user.id, _id: req.body.parent });
+            const user = await User.findOne({ _id: req.user.id });
 
             if (user.usedSpace + file.size > user.diskSpace) {
-                return res.status(400).json({ message: 'There no space on the disk' })
+                return res.status(400).json({ message: 'There is no space on the disk' });
             }
 
-            user.usedSpace = user.usedSpace + file.size
+            user.usedSpace += file.size;
 
             let path;
             if (parent) {
-                path = `${config.get('filePath')}\\${user._id}\\${parent.path}\\${file.name}`
+                path = `${config.get('filePath')}/${user._id}/${parent.path}/${file.name}`;
             } else {
-                path = `${config.get('filePath')}\\${user._id}\\${file.name}`
+                path = `${config.get('filePath')}/${user._id}/${file.name}`;
             }
 
             if (fs.existsSync(path)) {
-                return res.status(400).json({ message: 'File already exist' })
+                return res.status(400).json({ message: 'File already exists' });
             }
-            file.mv(path)
 
-            const type = file.name.split('.').pop()
-            let filePath = file.name
-            if (parent) {
-                filePath = parent.path + "\\" + file.name
-            }
+            // Проверка и генерация случайного индекса, если путь пустой
+            const ensureUniquePath = async (path) => {
+                let uniquePath = path;
+                while (await File.findOne({ path: uniquePath })) {
+                    uniquePath = `${path}_${Math.floor(Math.random() * 10000)}`;
+                }
+                return uniquePath;
+            };
+
+            // Генерация уникального пути
+            const uniquePath = await ensureUniquePath(path);
+
+            // Перемещение файла и сохранение
+            await file.mv(uniquePath);
+
+            const type = file.name.split('.').pop();
+
             const dbFile = new File({
                 name: file.name,
                 type,
                 size: file.size,
-                path: filePath,
+                path: parent?.path || uniquePath, 
                 parent: parent?._id,
                 user: user._id
             });
 
-            await dbFile.save()
-            await user.save()
+            await dbFile.save();
+            await user.save();
 
-            res.json(dbFile)
+            res.json(dbFile);
         } catch (e) {
-            console.log(e)
-            return res.status(500).json({ message: "Upload error" })
+            console.log('Upload error:', e);
+            if (e.code === 11000) {
+                return res.status(400).json({ message: 'Duplicate key error', error: e.message });
+            }
+            return res.status(500).json({ message: 'Upload error', error: e.message });
         }
     }
+
 
     async downloadFile(req, res) {
         try {
             const file = await File.findOne({ _id: req.query.id, user: req.user.id })
-            const path = fileService.getPath(file)
+            const path = config.get('filePath') + '/' + req.user.id + '/' + file.name;
+
+            console.log(path);
             if (fs.existsSync(path)) {
                 return res.download(path, file.name)
             }
@@ -103,18 +119,21 @@ class FileController {
         }
     }
 
+
     async deleteFile(req, res) {
         try {
-            const file = await File.findOne({ _id: req.query.id, user: req.user.id })
+            const file = await File.findOne({ _id: req.body.id, user: req.user.id });
             if (!file) {
-                return res.status(400).json({ message: 'file not found' })
+                return res.status(400).json({ message: 'File not found' });
             }
-            fileService.deleteFile(file)
-            await file.remove()
-            return res.json({ message: 'File was deleted' })
+
+            fileService.deleteFile(file);
+            console.log('files', file);
+            await File.deleteOne({ _id: req.body.id, user: req.user.id });
+            return res.json({ message: 'File was deleted' });
         } catch (e) {
-            console.log(e)
-            return res.status(400).json({ message: 'Dir is not empty' })
+            console.log(e);
+            return res.status(400).json({ message: 'Dir is not empty' });
         }
     }
 
@@ -135,7 +154,7 @@ class FileController {
             const file = req.files.file
             const user = await User.findById(req.user.id)
             const avatarName = Uuid.v4() + ".jpg"
-            file.mv(config.get('staticPath') + "\\" + avatarName)
+            file.mv(config.get('staticPath') + "/" + avatarName)
             user.avatar = avatarName
             await user.save()
             return res.json(user)
@@ -148,7 +167,7 @@ class FileController {
     async deleteAvatar(req, res) {
         try {
             const user = await User.findById(req.user.id)
-            fs.unlinkSync(config.get('staticPath') + "\\" + user.avatar)
+            fs.unlinkSync(config.get('staticPath') + "/" + user.avatar)
             user.avatar = null
             await user.save()
             return res.json(user)
