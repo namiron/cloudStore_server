@@ -9,6 +9,7 @@ const fileRouter = require('./routes/file.routes')
 const app = express();
 app.use(fileUpload({ createParentPath: true }));
 app.use(corsMiddleware)
+app.use(express.static('staticPath'))
 app.use(express.json())
 app.use('/api/auth', authRouter)
 app.use('/api/files', fileRouter)

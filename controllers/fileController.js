@@ -31,7 +31,23 @@ class FileController {
     async getFiles(req, res) {
         try {
 
-            const files = await File.find({ user: req.user.id, parent: req.query.parent })
+            const { sort } = req.query
+            let files
+            switch (sort) {
+                case 'name':
+                    files = await File.find({ user: req.user.id, parent: req.query.parent }).sort({ name: 1 })
+                    break
+                case 'type':
+                    files = await File.find({ user: req.user.id, parent: req.query.parent }).sort({ type: 1 })
+                    break
+                case 'date':
+                    files = await File.find({ user: req.user.id, parent: req.query.parent }).sort({ date: 1 })
+                    break
+                default:
+                    files = await File.find({ user: req.user.id, parent: req.query.parent })
+                    break;
+            }
+
             return res.json(files)
 
         } catch (error) {
@@ -106,7 +122,7 @@ class FileController {
     async downloadFile(req, res) {
         try {
             const file = await File.findOne({ _id: req.query.id, user: req.user.id })
-            const path = config.get('filePath') + '/' + req.user.id + '/' + file.name;
+            const path = fileService.getPath(file)
 
             console.log(path);
             if (fs.existsSync(path)) {
