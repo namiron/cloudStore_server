@@ -3,12 +3,15 @@ const mongoose = require('mongoose');
 const config = require('config');
 const authRouter = require('./routes/auth.routes')
 const corsMiddleware = require('./middleware/cors.middleware')
+const filePathMiddleware = require('./middleware/filePath.middleware')
 const fileUpload = require('express-fileupload');
 const fileRouter = require('./routes/file.routes')
+const path = require('path')
 //-------------------------------app
 const app = express();
 app.use(fileUpload({ createParentPath: true }));
 app.use(corsMiddleware)
+app.use(filePathMiddleware(path.resolve(__dirname, files)))
 app.use(express.static('staticPath'))
 app.use(express.json())
 app.use('/api/auth', authRouter)
@@ -17,7 +20,7 @@ app.use('/api/files', fileRouter)
 //-------------------------------app
 
 
-const PORT = config.get('serverPort');
+const PORT = process.env.PORT || config.get('serverPort');
 const dbUrl = config.get('dbUrl');
 
 const start = async () => {

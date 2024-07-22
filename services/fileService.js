@@ -4,8 +4,8 @@ const path = require('path');
 
 class FileService {
 
-    createDir(file) {
-        const filePath = path.join(config.get('filePath'), file.user.toString(), file.path);
+    createDir(req, file) {
+        const filePath = this.getPath(req, file);
         return new Promise((resolve, reject) => {
             try {
                 if (!fs.existsSync(filePath)) {
@@ -19,16 +19,16 @@ class FileService {
             }
         });
     }
-    deleteFile(file) {
-        const path = this.getPath(file)
+    deleteFile(req, file) {
+        const path = this.getPath(req, file)
         if (file.type === 'dir') {
             fs.rmdirSync(path)
         } else {
             fs.unlinkSync(path)
         }
     }
-    getPath(file) {
-        let way = config.get('filePath') + '/' + file.user + '/' + file.name
+    getPath(req, file) {
+        let way = req.filePath + '/' + file.user + '/' + file.name
 
         return way
 
