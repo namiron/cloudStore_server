@@ -44,23 +44,17 @@ const {email,password} = req.body
   const user await User.findOne({email})
   3. if we have email simple we will cheack password
    const isPassValid = bcrypt.compareSync(password, user.password)
-  4. if all clear, we create jwt token and return data res.jso()
-            const token = jwt.sign({id: user.id}, config.get("secretKey"), {expiresIn: "1h"})
-            return res.json({
-                token,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    diskSpace: user.diskSpace,
-                    usedSpace: user.usedSpace,
-                    avatar: user.avatar
-                }
-            })
+  4. if all clear, we create jwt token and return data 
+          
   5.after we create is authorization code
-middleware module.exports = (req, res, next) => {
-    if (req.method === 'OPTIONS') {
-       return next()
-    }
+
+
+
+
+
+
+
+
 
     try {
         const token = req.headers.authorization.split(' ')[1]
@@ -74,6 +68,7 @@ middleware module.exports = (req, res, next) => {
         return res.status(401).json({message: 'Auth error'})
     }
 }
+
 
             const user = await User.findOne({_id: req.user.id})
             const token = jwt.sign({id: user.id}, config.get("secretKey"), {expiresIn: "1h"})
